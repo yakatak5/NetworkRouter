@@ -1,7 +1,7 @@
 udo apt-get update;
 sudo apt-get install -y python-dev vim-nox python-setuptools flex bison traceroute;
 cd ~;
-git clone git clone git://github.com/dound/ltprotocol.git;
+git clone git://github.com/dound/ltprotocol.git;
 cd ltprotocol;
 sudo python setup.py install;
 cd ~/pox;
