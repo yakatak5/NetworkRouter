@@ -188,7 +188,7 @@ void sr_handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req,
       req->times_sent++;
     }
   }
-} /* -- sr_handle_arpreq -- */
+} /* -- sr_handle_arpreq-- */
 
 /*---------------------------------------------------------------------
  * Method: void sr_waitforarp(struct sr_instance *sr, uint8_t *pkt,
@@ -290,10 +290,18 @@ void sr_handlepacket(struct sr_instance* sr,
   assert(sr);
   assert(packet);
   assert(interface);
-
+  
   printf("*** -> Received packet of length %d \n",len);
-
-  /*************************************************************************/
+  sr_ip_hdr_t *iphdr = (sr_ip_hdr_t *)(packet+sizeof(sr_ethernet_hdr_t));
+ print_addr_ip_int(ntohl(iphdr->ip_v));
+ printf("%i",iphdr->ip_src);
+/* 
+printf("%u",iphdr->ip_ttl); 
+*/
+/*
+print_hdrs(packet,len);
+*/
+ /*************************************************************************/
   /* TODO: Handle packets                                                  */
 
 
