@@ -292,18 +292,44 @@ void sr_handlepacket(struct sr_instance* sr,
   assert(interface);
   printf("%s",interface);
   uint16_t ethtype = ethertype(packet);
+  /* Sanity Checks for length of ethernet  shamelessly borrowed from sr_utils */
+  int minlen = sizeof(sr_ethernet_hdr_t);
+if(len < minlen){
+	fprintf(stderr,"Too short to be an ethernet packet");
+	return;
+}
+/* check if IP packet */ 
+  uint16_t ettype = ethertype(packet);
+ if(ettype == ethertype_ip){
+ 	minlen += sizeof(sr_ip_hdr_t);
+	if(len > minlen){ /* its an IP packet*/
 
-printf("\n");  
-  printf("*** -> Received packet of length %d \n",len);
-  sr_ip_hdr_t *iphdr = (sr_ip_hdr_t *)(packet+sizeof(sr_ethernet_hdr_t));
-  uint8_t checksum = iphdr->ip_sum;
-  uint32_t ipSrc = ntohl(iphdr->ip_src);  
-  uint32_t ipDest = ntohl(iphdr->ip_dst);
-  printf("Source: ");
-  print_addr_ip_int(ipSrc);
-  printf("Dest: ");
-  print_addr_ip_int(ipDest); 
- printf("\n");
+		/*Need to chceck IP checksum next!!!*/
+		
+		printf("\n");  
+  		printf("*** -> Received packet of length %d \n",len);
+  		sr_ip_hdr_t *iphdr = (sr_ip_hdr_t *)(packet+sizeof(sr_ethernet_hdr_t));
+  		uint8_t checksum = iphdr->ip_sum;
+  		uint32_t ipSrc = ntohl(iphdr->ip_src);  
+  		uint32_t ipDest = ntohl(iphdr->ip_dst);
+ 	 	printf("Source: ");
+  		print_addr_ip_int(ipSrc);
+  		printf("Dest: ");
+  		print_addr_ip_int(ipDest); 
+ 		printf("\n");
+		/* need to check what type of IP packet, mainly if ICMP */
+		uint8_t ip_proto = ip_protocol(packet + sizeof(sr_ethernet_hdr_t));
+		if(ip_proto == ip_protocol_icmp){
+			/* handle ICMP packets */
+		}
+	}else{
+		fprintf(stderr, "Too short to be IP");
+		return;
+	}
+}else if (ethtype == ethertype_arp){
+/* handle the arp packet? */
+}
+
 /* 
 printf("%u",iphdr->ip_ttl); 
 */
