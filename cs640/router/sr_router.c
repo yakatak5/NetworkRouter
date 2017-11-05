@@ -290,11 +290,20 @@ void sr_handlepacket(struct sr_instance* sr,
   assert(sr);
   assert(packet);
   assert(interface);
-  
+  printf("%s",interface);
+  uint16_t ethtype = ethertype(packet);
+
+printf("\n");  
   printf("*** -> Received packet of length %d \n",len);
   sr_ip_hdr_t *iphdr = (sr_ip_hdr_t *)(packet+sizeof(sr_ethernet_hdr_t));
- print_addr_ip_int(ntohl(iphdr->ip_v));
- printf("%i",iphdr->ip_src);
+  uint8_t checksum = iphdr->ip_sum;
+  uint32_t ipSrc = ntohl(iphdr->ip_src);  
+  uint32_t ipDest = ntohl(iphdr->ip_dst);
+  printf("Source: ");
+  print_addr_ip_int(ipSrc);
+  printf("Dest: ");
+  print_addr_ip_int(ipDest); 
+ printf("\n");
 /* 
 printf("%u",iphdr->ip_ttl); 
 */
