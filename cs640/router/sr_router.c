@@ -280,7 +280,14 @@ void sr_handlepacket_arp(struct sr_instance *sr, uint8_t *pkt,
  * the method call.
  *
  *---------------------------------------------------------------------*/
-
+void forward_ip(struct sr_instance* sr, sr_ip_hdr_t *iphdr, unsigned int length){
+	/* lets find an interface */
+	printf("%u\n",iphdr->ip_sum);
+	/*struct sr_rt* rt = sr->routing_table;
+	while(rt){
+		uint32_t d1 = rt->mask.s_addr 
+	*/
+}
 void sr_handlepacket(struct sr_instance* sr,
         uint8_t * packet/* lent */,
         unsigned int len,
@@ -332,11 +339,23 @@ if(len < minlen){
 			printf("%u \n",routingTable->dest.s_addr);
 			if( destination == routingTable->dest.s_addr){
 				printf("Found a dest\n");
-
+				printf("it belongs here\n");
+				return;
+			
 			}
 			routingTable = routingTable->next;
 
 		}
+		printf("Not destined for me lets forward!\n");
+		
+		printf("%u\n",iphdr->ip_ttl);
+		iphdr->ip_ttl = iphdr->ip_ttl -1;
+		printf("%u\n",iphdr->ip_ttl);
+		if(iphdr->ip_ttl <=0){
+			printf("TIME TO SEND ICMP TO PREVIOUS DUDE\n");
+			/*YO SEND AN ICMP REQUEST TO THE PREVIOUS HOP ABOUT TIMEOUT*/
+		}
+		forward_ip(sr,iphdr,len);
 	}else{
 		fprintf(stderr, "Too short to be IP");
 		return;
