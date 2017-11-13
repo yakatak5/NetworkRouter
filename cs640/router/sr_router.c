@@ -312,15 +312,30 @@ if(len < minlen){
   		uint8_t checksum = iphdr->ip_sum;
   		uint32_t ipSrc = ntohl(iphdr->ip_src);  
   		uint32_t ipDest = ntohl(iphdr->ip_dst);
- 	 	printf("Source: ");
-  		print_addr_ip_int(ipSrc);
-  		printf("Dest: ");
+ 		
+  		/*print_addr_ip_int(ipSrc);
+  		
   		print_addr_ip_int(ipDest); 
- 		printf("\n");
-		/* need to check what type of IP packet, mainly if ICMP */
+ 		*/		/* need to check what type of IP packet, mainly if ICMP */
 		uint8_t ip_proto = ip_protocol(packet + sizeof(sr_ethernet_hdr_t));
 		if(ip_proto == ip_protocol_icmp){
 			/* handle ICMP packets */
+			printf("in ICMP\n");
+		}
+		printf("Check for next hop\n");
+		/* let us forward the packet now*/
+		struct sr_rt* routingTable = sr->routing_table;
+		while(routingTable){
+			printf("InRoutingTable\n");
+			uint32_t destination = routingTable->mask.s_addr & iphdr->ip_dst;
+			printf("%u \n",destination);
+			printf("%u \n",routingTable->dest.s_addr);
+			if( destination == routingTable->dest.s_addr){
+				printf("Found a dest\n");
+
+			}
+			routingTable = routingTable->next;
+
 		}
 	}else{
 		fprintf(stderr, "Too short to be IP");
