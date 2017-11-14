@@ -299,6 +299,7 @@ void sr_handlepacket(struct sr_instance* sr,
   assert(interface);
   printf("%s",interface);
   uint16_t ethtype = ethertype(packet);
+sr_ethernet_hdr_t* etherhdr = (sr_ethernet_hdr_t*)packet;
   /* Sanity Checks for length of ethernet  shamelessly borrowed from sr_utils */
   int minlen = sizeof(sr_ethernet_hdr_t);
 if(len < minlen){
@@ -306,8 +307,8 @@ if(len < minlen){
 	return;
 }
 /* check if IP packet */ 
-  uint16_t ettype = ethertype(packet);
- if(ettype == ethertype_ip){
+
+ if(ethtype == ethertype_ip){
  	minlen += sizeof(sr_ip_hdr_t);
 	if(len > minlen){ /* its an IP packet*/
 
@@ -332,6 +333,7 @@ if(len < minlen){
 		printf("Check for next hop\n");
 		/* let us forward the packet now*/
 		struct sr_rt* routingTable = sr->routing_table;
+		struct sr_rt* packDest = NULL;
 		while(routingTable){
 			printf("InRoutingTable\n");
 			uint32_t destination = routingTable->mask.s_addr & iphdr->ip_dst;
@@ -340,14 +342,19 @@ if(len < minlen){
 			if( destination == routingTable->dest.s_addr){
 				printf("Found a dest\n");
 				printf("it belongs here\n");
-				return;
+				packDest = routingTable;
+				break;
 			
 			}
 			routingTable = routingTable->next;
 
 		}
 		printf("Not destined for me lets forward!\n");
-		
+		if(packDest == NULL){
+		/*SEND ICMP MESSAGE TO FIND HOST*/
+		return;
+		}
+	
 		printf("%u\n",iphdr->ip_ttl);
 		iphdr->ip_ttl = iphdr->ip_ttl -1;
 		printf("%u\n",iphdr->ip_ttl);
@@ -355,7 +362,18 @@ if(len < minlen){
 			printf("TIME TO SEND ICMP TO PREVIOUS DUDE\n");
 			/*YO SEND AN ICMP REQUEST TO THE PREVIOUS HOP ABOUT TIMEOUT*/
 		}
-		forward_ip(sr,iphdr,len);
+		printf("before out\n");
+		struct sr_if* out = sr_get_interface(sr,packDest->interface);
+		printf("before arp\n");
+		struct sr_arpentry* arp = sr_arpcache_lookup(&sr->cache,iphdr->ip_dst);
+		if(arp){
+			memcpy(etherhdr->ether_dhost,arp->mac,sizeof(uint8_t)*ETHER_ADDR_LEN);
+			memcpy(etherhdr->ether_shost,out->addr,sizeof(uint8_t)*ETHER_ADDR_LEN);
+
+		}else{
+		/*find next arp entry */
+		}
+		sr_send_packet(sr,iphdr,len,out);
 	}else{
 		fprintf(stderr, "Too short to be IP");
 		return;

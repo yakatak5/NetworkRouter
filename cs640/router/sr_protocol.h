@@ -164,7 +164,7 @@ enum icmp_protocol_code {
 };
 
 enum sr_ip_protocol {
-  icmp = 0x0001,
+  ip_protocol_icmp = 0x0001,
   tcp = 0x0006,
   udp = 0x0011,
 };
