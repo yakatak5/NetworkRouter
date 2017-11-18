@@ -148,11 +148,27 @@ struct sr_ethernet_hdr
 } __attribute__ ((packed)) ;
 typedef struct sr_ethernet_hdr sr_ethernet_hdr_t;
 
+enum icmp_protocol {
+  echo_req     = 0x0008,
+  echo_reply     = 0x0,
+  dest_unreach = 0x0003,
+  time_exceeded  = 0x000b,
+};
 
+enum icmp_protocol_code {
+  empty = 0x0,
+  port_unreach = 0x0003,
+  ttl_expired  = 0x0,
+  net_unreach  = 0x0,
+  host_unreach = 0x0001,
+};
 
 enum sr_ip_protocol {
-  ip_protocol_icmp = 0x0001,
+  icmp = 0x0001,
+  tcp = 0x0006,
+  udp = 0x0011,
 };
+
 
 enum sr_ethertype {
   ethertype_arp = 0x0806,
