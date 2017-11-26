@@ -299,7 +299,8 @@ void sr_handlepacket(struct sr_instance* sr,
   assert(interface);
   printf("%s",interface);
   uint16_t ethtype = ethertype(packet);
-sr_ethernet_hdr_t* etherhdr = (sr_ethernet_hdr_t*)packet;
+  struct sr_if* in_interface = sr_get_interface(sr,interface);
+sr_ethernet_hdr_t* e_hdr = (sr_ethernet_hdr_t*)packet;
   /* Sanity Checks for length of ethernet  shamelessly borrowed from sr_utils */
   int minlen = sizeof(sr_ethernet_hdr_t);
 if(len < minlen){
@@ -317,66 +318,87 @@ if(len < minlen){
 		printf("\n");  
   		printf("*** -> Received packet of length %d \n",len);
   		sr_ip_hdr_t *iphdr = (sr_ip_hdr_t *)(packet+sizeof(sr_ethernet_hdr_t));
-  		uint8_t checksum = iphdr->ip_sum;
+  		uint16_t checksum = iphdr->ip_sum;
   		uint32_t ipSrc = ntohl(iphdr->ip_src);  
   		uint32_t ipDest = ntohl(iphdr->ip_dst);
- 		
-  		/*print_addr_ip_int(ipSrc);
-  		
-  		print_addr_ip_int(ipDest); 
- 		*/		/* need to check what type of IP packet, mainly if ICMP */
+		iphdr->ip_sum = 0; /* reset so not to mess with checksum*/
+		if(cksum(iphdr,sizeof(sr_ip_hdr_t))!=checksum){
+			printf("Checksum Error! :D\n");
+			return;
+		}
+		iphdr->ip_sum = checksum; 		
+		/* if the IP address for the destination is this interfaces IP we need to handle it */
+		if(ntohl(ipDest) == ntohl(in_interface->ip)){
+		/* if the protocol is an ICMP message */
 		uint8_t ip_proto = ip_protocol(packet + sizeof(sr_ethernet_hdr_t));
 		if(ip_proto == ip_protocol_icmp){
 			/* handle ICMP packets */
 			printf("in ICMP\n");
+			sr_icmp_hdr_t* ichdr = (sr_icmp_hdr_t*)(packet+sizeof(sr_ethernet_hdr_t) +sizeof(sr_ip_hdr_t));
+			uint16_t ic_checkSum = ichdr->icmp_sum;
+			if(cksum(ichdr,len-sizeof(sr_ethernet_hdr_t)-sizeof(sr_ip_hdr_t))!=ic_checkSum){
+				printf("ICMP checksum is wrong! :D\n");
+				return;
+			}
+			/* see what type of ICMP it is!*/
+			if(ichdr->icmp_type == 8){
+				memcpy(e_hdr->ether_dhost,e_hdr->ether_shost,sizeof(uint8_t)*ETHER_ADDR_LEN);
+				memcpy(e_hdr->ether_shost,in_interface->addr,sizeof(uint8_t)*ETHER_ADDR_LEN);
+				iphdr->ip_src = ipDest;
+				iphdr->ip_dst = ipSrc;
+				/* recalc checksum*/
+				iphdr->ip_sum = 0;
+				iphdr->ip_sum = cksum(iphdr,sizeof(sr_ip_hdr_t));
+			
+				/*modify ICMP message and recalc checksum */
+				ichdr->icmp_type = 0;
+				ichdr->icmp_code=0;
+				ichdr->icmp_sum = 0;
+				ichdr->icmp_sum = cksum(ichdr,len-sizeof(sr_ethernet_hdr_t) - sizeof(sr_ip_hdr_t));
+				sr_send_packet(sr,packet,len,in_interface->name);
+			}	
 		}
-		printf("Check for next hop\n");
-		/* let us forward the packet now*/
-		struct sr_rt* routingTable = sr->routing_table;
-		struct sr_rt* packDest = NULL;
-		while(routingTable){
-			printf("InRoutingTable\n");
-			uint32_t destination = routingTable->mask.s_addr & iphdr->ip_dst;
-			printf("%u \n",destination);
-			printf("%u \n",routingTable->dest.s_addr);
-			if( destination == routingTable->dest.s_addr){
-				printf("Found a dest\n");
-				printf("it belongs here\n");
-				packDest = routingTable;
-				break;
+		}else{
+		/* not destined for us so lets find next hop and send it on its way*/
+		
+			printf("Check to make sure time to live is ok\n");
+			printf("%u\n",iphdr->ip_ttl);
+			iphdr->ip_ttl = iphdr->ip_ttl -1;
+			printf("%u\n",iphdr->ip_ttl);
+			if(iphdr->ip_ttl <=0){
+				printf("TTL is not ok, ICMP time");
+				struct sr_packet *ttlPkt = (struct sr_packet*)malloc(sizeof(struct sr_packet));
+				/*send ICMP message*/
+				return;
+				/*YO SEND AN ICMP REQUEST TO THE PREVIOUS HOP ABOUT TIMEOUT*/
+			}	
+			struct sr_rt* routingTable = sr->routing_table;
+			struct sr_rt* packDest = NULL;
+			while(routingTable){
+				uint32_t preMatch = (iphdr->ip_dst &(*(uint32_t*)&routingTable->mask))-(*(uint32_t*)&routingTable->dest);
+				if(preMatch == 0){
+					packDest = routingTable;
+					break;
+				}
+				routingTable = routingTable->next;
+			}
+			if(packDest == NULL){
+			/*SEND ICMP MESSAGE TO FIND HOST*/
+				return;
+			}	
+	
+			printf("before out\n");
+			struct sr_if* out = sr_get_interface(sr,packDest->interface);
+			printf("before arp\n");
+			struct sr_arpentry* arp = sr_arpcache_lookup(&sr->cache,iphdr->ip_dst);
+			if(!arp){
 			
 			}
-			routingTable = routingTable->next;
-
-		}
-		printf("Not destined for me lets forward!\n");
-		if(packDest == NULL){
-		/*SEND ICMP MESSAGE TO FIND HOST*/
-		return;
+			memcpy(e_hdr->ether_dhost,arp->mac,sizeof(uint8_t)*ETHER_ADDR_LEN);
+			memcpy(e_hdr->ether_shost,out->addr,sizeof(uint8_t)*ETHER_ADDR_LEN);
+			sr_send_packet(sr,packet,len,out->name);
 		}
 	
-		printf("%u\n",iphdr->ip_ttl);
-		iphdr->ip_ttl = iphdr->ip_ttl -1;
-		printf("%u\n",iphdr->ip_ttl);
-		if(iphdr->ip_ttl <=0){
-			printf("TIME TO SEND ICMP TO PREVIOUS DUDE\n");
-			/*YO SEND AN ICMP REQUEST TO THE PREVIOUS HOP ABOUT TIMEOUT*/
-		}
-		printf("before out\n");
-		struct sr_if* out = sr_get_interface(sr,packDest->interface);
-		printf("before arp\n");
-		struct sr_arpentry* arp = sr_arpcache_lookup(&sr->cache,iphdr->ip_dst);
-		if(arp){
-			memcpy(etherhdr->ether_dhost,arp->mac,sizeof(uint8_t)*ETHER_ADDR_LEN);
-			memcpy(etherhdr->ether_shost,out->addr,sizeof(uint8_t)*ETHER_ADDR_LEN);
-
-		}else{
-		/*find next arp entry */
-		}
-		sr_send_packet(sr,iphdr,len,out);
-	}else{
-		fprintf(stderr, "Too short to be IP");
-		return;
 	}
 }else if (ethtype == ethertype_arp){
 /* handle the arp packet? */
