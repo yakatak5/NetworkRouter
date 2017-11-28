@@ -291,17 +291,18 @@ void sr_handlepacket_arp(struct sr_instance *sr, uint8_t *pkt,
 
     /* Process pending ARP request entry, if there is one */
     if (req != NULL)
-    {
-      /* TODO: send all packets on the req->packets linked list */
-      struct sr_packet *waiting_walker = req->packets;
+    {   
+	/* TODO: send all packets on the req->packets linked list */
+      	struct sr_packet *waiting_walker = req->packets;
 	// Loop waiting
-	while (waiting_walker)
+	while (waiting_walker != NULL)
 	{
-		Debug("Forwarding ia packet that was waiting for ARP reply\n");
-		sr_forward_packet(sr, waiting_walker->buf, waiting_walker->len, arphdr-> ar_sha, src_iface);
-		
-		//go to next waiting packet if possible
-		waiting_walker = waiting_walker->next;
+		sr_ethernet_hdr_t * eth_hdr = (sr_ethernet_hdr *)(waiting_walker->buf); //sets
+		memcpy(eth_hdr->ether_dhost, waiting_walker->ar_sha, sizeof(unsigned char) * ETHER_ADDR_LEN);
+		memcpy(eth_hdr->ether_dhost, src_iface->ar_sha, sizeof(unsigned char) * ETHER_ADDR_LEN);
+		print_hdrs(waiting_walker->buf, sizeof(sr_ip_hdr_t) + sizeof(sr_ethernet_hdr_t) +sizeof(sr_icmp_t3_hdr_t));
+		sr_send_packet(sr, waiting_walker->buf, waiting_walker->len, waiting_walker->iface);
+		waiting_walker = (waiting_walker)->next;
 	}
       /* Release ARP request entry */
       sr_arpreq_destroy(&(sr->cache), req);
