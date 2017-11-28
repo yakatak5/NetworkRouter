@@ -170,7 +170,52 @@ void sr_handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req,
       /*********************************************************************/
       /* TODO: send ICMP host uncreachable to the source address of all    */
       /* packets waiting on this request                                   */
+    unsigned int len = sizeof(sr_ethernet_hdr_t) +
+    sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
+    uint8_t *newpacket = (uint8_t *)malloc(len);
+    bzero(newpacket, len);
 
+    // Headers for newpacket
+    sr_ethernet_hdr_t *new_eth_hdr = (sr_ethernet_hdr_t *)(newpacket);
+    sr_ip_hdr_t *new_ip_hdr = (sr_ip_hdr_t *)(newpacket + sizeof(sr_ethernet_hdr_t))
+    sr_icmp_t3_hdr_t *new_icmp_hdr = (sr_icmp_t3_hdr_t *)((sr_icmp_hdr_t *)(newpacket + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)));
+
+   
+    // Find interface we should be sending the packet out on
+    struct sr_rt* walker = req->packets 
+ 
+    while (walker){
+        uint8_t * dfield = malloc(ICMP_DATA_SIZE);
+        //icmp hdr
+         new_icmp_hdr->icmp_type = 3;
+         new_icmp_hdr->icmp_code = 1;
+         new_ip_hdr->ip_sum = 0;
+         new_ip_hdr->unused = 0;
+         memcpy(dfield, new_ip_hdr, ICMP_DATA_SIZE);
+         memcpy(new_icmp_hdr->data, dfield, ICMP_DATA_SIZE);
+         free(dfield);
+         new_icmp_hdr->icmp_sum = cksum(new_icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
+         //ip hdr
+         new_ip_hdr->tos = 0;
+         new_ip_hdr->ip_hl = sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
+         new_ip_hdr->ip_id = 0;
+         new_ip_hdr->ip_off = 0;
+         new_ip_hdr->ip_ttl = INIT_TTL;
+         new_ip_hdr->ip_p = htons(ip_protocol_icmp);
+         new_ip_hdr->ip_sum = 0;
+         new_ip_hdr->ip_src = out_iface->ip;
+         new_ip_hdr->ip_dst= new_ip_hdr->ip_src;
+         new_ip_hdr->ip_sum = cksum(new_ip_hdr, 4 * new_ip_hdr->iphl);
+         //eth hdr
+         memcpy(new_eth_hdr->ether_dhost, new_eth_hdr->ether_shost, ETHER_ADDR_LEN);
+         memcpy(new_eth_hdr->ether_shost, out_iface->addr, ETHER_ADDR_LEN);
+        new_eth_hdr->ether_type = htons(ethertype_ip);
+
+        sr_send_packet(sr, packet, len, out_iface->name);    
+
+         walker = walker ->next;
+    }
+    
 
 
 
