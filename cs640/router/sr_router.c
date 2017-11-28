@@ -247,13 +247,17 @@ void sr_handlepacket_arp(struct sr_instance *sr, uint8_t *pkt,
     /* Process pending ARP request entry, if there is one */
     if (req != NULL)
     {
-      /*********************************************************************/
-      /* TODO: send all packets on the req->packets linked list            */
-
-
-
-      /*********************************************************************/
-
+      /* TODO: send all packets on the req->packets linked list */
+      struct sr_packet *waiting_walker = req->packets;
+	// Loop waiting
+	while (waiting_walker)
+	{
+		Debug("Forwarding ia packet that was waiting for ARP reply\n");
+		sr_forward_packet(sr, waiting_walker->buf, waiting_walker->len, arphdr-> ar_sha, src_iface);
+		
+		//go to next waiting packet if possible
+		waiting_walker = waiting_walker->next;
+	}
       /* Release ARP request entry */
       sr_arpreq_destroy(&(sr->cache), req);
     }
