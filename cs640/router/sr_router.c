@@ -451,21 +451,14 @@ if(len < minlen){
 	
 	}
 }else if (ethtype == ethertype_arp){
-/* handle the arp packet? */
+	minlength += sizeof(sr_arp_hdr_t);
+	 if (length < minlength)
+		 fprintf(stderr, "Failed to print ARP header, insufficent length\n);
+	else
+		print_hdr_arp(bug + sizeof(sr_ethernet_hdr_t));
 }
-
-/* 
-printf("%u",iphdr->ip_ttl); 
-*/
-/*
-print_hdrs(packet,len);
-*/
- /*************************************************************************/
-  /* TODO: Handle packets                                                  */
-
-
-
-  /*************************************************************************/
-
+else {
+	fprintf(stderr, "Unrecognized Ethernet Type: %d\n", ethtype);	
+}
 }/* end sr_ForwardPacket */
 
