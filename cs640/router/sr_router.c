@@ -455,7 +455,7 @@ if(len < minlen){
 	 if (length < minlength)
 		 fprintf(stderr, "Failed to print ARP header, insufficent length\n);
 	else
-		print_hdr_arp(bug + sizeof(sr_ethernet_hdr_t));
+		print_hdr_arp(buf + sizeof(sr_ethernet_hdr_t));
 }
 else {
 	fprintf(stderr, "Unrecognized Ethernet Type: %d\n", ethtype);	
