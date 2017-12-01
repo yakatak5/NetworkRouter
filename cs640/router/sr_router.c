@@ -182,7 +182,7 @@ void sr_handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req,
 
    
     /* Find interface we should be sending the packet out on */
-    struct sr_rt* walker = req->packets 
+    struct sr_rt* walker = req->packets; 
  
     while (walker){
         uint8_t * dfield = malloc(ICMP_DATA_SIZE);
@@ -419,13 +419,11 @@ if(len < minlen){
 				printf("TTL is not ok, ICMP time");
 				unsigned int len = sizeof(sr_ethernet_hdr_t) +
 			sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
-			uint8_t *ttlPkt = (uint8_t *)malloc(len);
 			int size = sizeof(sr_icmp_t3_hdr_t);
 			uint8_t  *buffer = (uint8_t*) malloc(sizeof(sr_icmp_t3_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_ethernet_hdr_t));
 			memcpy(buffer,packet, sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
-
-			sr_icmp_t3_hdr_t *new_icmp_hdr = (sr_icmp_t3_hdr_t *)((sr_icmp_hdr_t *)(buffer + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)));
-       sr_ip_hdr_t *new_ip_hdr = (sr_ip_hdr_t *)(buffer + sizeof(sr_ethernet_hdr_t));
+   sr_icmp_t3_hdr_t *new_icmp_hdr = (sr_icmp_t3_hdr_t *)((sr_icmp_hdr_t *)(buffer + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)));
+       			sr_ip_hdr_t *new_ip_hdr = (sr_ip_hdr_t *)(buffer + sizeof(sr_ethernet_hdr_t));
 			 new_icmp_hdr->icmp_type = 11;
 			 new_icmp_hdr->icmp_code = 0;
 			 new_icmp_hdr->sum = 0;
@@ -490,8 +488,8 @@ if(len < minlen){
 	
 	}
 }else if (ethtype == ethertype_arp){
-	minlength += sizeof(sr_arp_hdr_t);
-	 if (length < minlength)
+	minlen += sizeof(sr_arp_hdr_t);
+	 if (len < minlen)
 		 fprintf(stderr, "Failed to print ARP header, insufficent length\n");
 	else
 		print_hdr_arp(buf + sizeof(sr_ethernet_hdr_t));
