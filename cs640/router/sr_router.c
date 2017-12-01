@@ -175,13 +175,13 @@ void sr_handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req,
     uint8_t *newpacket = (uint8_t *)malloc(len);
     bzero(newpacket, len);
 
-    // Headers for newpacket
+    /* Headers for newpacket*/
     sr_ethernet_hdr_t *new_eth_hdr = (sr_ethernet_hdr_t *)(newpacket);
-    sr_ip_hdr_t *new_ip_hdr = (sr_ip_hdr_t *)(newpacket + sizeof(sr_ethernet_hdr_t))
+    sr_ip_hdr_t *new_ip_hdr = (sr_ip_hdr_t *)(newpacket + sizeof(sr_ethernet_hdr_t));
     sr_icmp_t3_hdr_t *new_icmp_hdr = (sr_icmp_t3_hdr_t *)((sr_icmp_hdr_t *)(newpacket + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)));
 
    
-    // Find interface we should be sending the packet out on
+    /* Find interface we should be sending the packet out on */
     struct sr_rt* walker = req->packets 
  
     while (walker){
@@ -294,7 +294,7 @@ void sr_handlepacket_arp(struct sr_instance *sr, uint8_t *pkt,
     {   
 	/* TODO: send all packets on the req->packets linked list */
       	struct sr_packet *waiting_walker = req->packets;
-	// Loop waiting
+	/* Loop waiting*/
 	while (waiting_walker != NULL)
 	{
 		sr_ethernet_hdr_t * eth_hdr = (sr_ethernet_hdr *)(waiting_walker->buf); //sets
@@ -420,41 +420,42 @@ if(len < minlen){
 				unsigned int len = sizeof(sr_ethernet_hdr_t) +
 			sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
 			uint8_t *ttlPkt = (uint8_t *)malloc(len);
-			size = sizeof(sr_icmp_t3_hdr_t);
-			buffer = (uint8_t*) malloc(sizeof(sr_icmp_t3_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_ethernet_hdr_t));
+			int size = sizeof(sr_icmp_t3_hdr_t);
+			uint8_t  *buffer = (uint8_t*) malloc(sizeof(sr_icmp_t3_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_ethernet_hdr_t));
 			memcpy(buffer,packet, sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
 			sr_icmp_t3_hdr_t *new_icmp_hdr = (sr_icmp_t3_hdr_t *)((sr_icmp_hdr_t *)(buffer + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)));
+       sr_ip_hdr_t *new_ip_hdr = (sr_ip_hdr_t *)(buffer + sizeof(sr_ethernet_hdr_t));
 			 new_icmp_hdr->icmp_type = 11;
 			 new_icmp_hdr->icmp_code = 0;
-			 new_ip_hdr->ip_sum = 0;
+			 new_icmp_hdr->sum = 0;
 			 new_ip_hdr->next_mtu = IP_MAXPACKET;
 
 			 memcpy(new_icmp_hdr->data, packet + sizeof(sr_ethernet_hdr_t), ICMP_DATA_SIZE);
 			 new_icmp_hdr->icmp_sum = cksum(new_icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
 
-			 sr_ip_hdr_t *new_ip_hdr = (sr_ip_hdr_t *)(buffer + sizeof(sr_ethernet_hdr_t));
+			
 
 			 new_ip_hdr->ip_dst= new_ip_hdr->ip_src;
 
 			 new_ip_hdr->ip_p = htons(ip_protocol_icmp);
-			 new_ip_hdr->ip_src = interface->ip;
+			 new_ip_hdr->ip_src = in_interface->ip;
 			 new_ip_hdr->ip_hl = sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
 			 new_ip_hdr->ip_ttl = INIT_TTL;
 
 			 new_ip_hdr->ip_sum = 0;
 
 
-			 new_ip_hdr->ip_sum = cksum(new_ip_hdr, 4 * new_ip_hdr->iphl);
+			 new_ip_hdr->ip_sum = cksum(new_ip_hdr, 4 * new_ip_hdr->ip_hl);
 
 
 			 sr_ethernet_hdr_t *new_eth_hdr = (sr_ethernet_hdr_t *)(buffer);
 
 			  memcpy(new_eth_hdr->ether_dhost, new_eth_hdr->ether_shost, ETHER_ADDR_LEN);
-			 memcpy(new_eth_hdr->ether_shost, interface->addr, ETHER_ADDR_LEN);
+			 memcpy(new_eth_hdr->ether_shost, in_interface->addr, ETHER_ADDR_LEN);
 			new_eth_hdr->ether_type = htons(ethertype_ip);
 
-			sr_send_packet(sr, packet, len, interface->name); 
+			sr_send_packet(sr, packet, len, in_interface->name); 
 						/*send ICMP message*/
 				return;
 				/*YO SEND AN ICMP REQUEST TO THE PREVIOUS HOP ABOUT TIMEOUT*/
@@ -491,7 +492,7 @@ if(len < minlen){
 }else if (ethtype == ethertype_arp){
 	minlength += sizeof(sr_arp_hdr_t);
 	 if (length < minlength)
-		 fprintf(stderr, "Failed to print ARP header, insufficent length\n);
+		 fprintf(stderr, "Failed to print ARP header, insufficent length\n");
 	else
 		print_hdr_arp(buf + sizeof(sr_ethernet_hdr_t));
 }
