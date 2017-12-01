@@ -417,8 +417,45 @@ if(len < minlen){
 			printf("%u\n",iphdr->ip_ttl);
 			if(iphdr->ip_ttl <=0){
 				printf("TTL is not ok, ICMP time");
-				struct sr_packet *ttlPkt = (struct sr_packet*)malloc(sizeof(struct sr_packet));
-				/*send ICMP message*/
+				unsigned int len = sizeof(sr_ethernet_hdr_t) +
+			sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
+			uint8_t *ttlPkt = (uint8_t *)malloc(len);
+			size = sizeof(sr_icmp_t3_hdr_t);
+			buffer = (uint8_t*) malloc(sizeof(sr_icmp_t3_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_ethernet_hdr_t));
+			memcpy(buffer,packet, sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+
+			sr_icmp_t3_hdr_t *new_icmp_hdr = (sr_icmp_t3_hdr_t *)((sr_icmp_hdr_t *)(buffer + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)));
+			 new_icmp_hdr->icmp_type = 11;
+			 new_icmp_hdr->icmp_code = 0;
+			 new_ip_hdr->ip_sum = 0;
+			 new_ip_hdr->next_mtu = IP_MAXPACKET;
+
+			 memcpy(new_icmp_hdr->data, packet + sizeof(sr_ethernet_hdr_t), ICMP_DATA_SIZE);
+			 new_icmp_hdr->icmp_sum = cksum(new_icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
+
+			 sr_ip_hdr_t *new_ip_hdr = (sr_ip_hdr_t *)(buffer + sizeof(sr_ethernet_hdr_t));
+
+			 new_ip_hdr->ip_dst= new_ip_hdr->ip_src;
+
+			 new_ip_hdr->ip_p = htons(ip_protocol_icmp);
+			 new_ip_hdr->ip_src = interface->ip;
+			 new_ip_hdr->ip_hl = sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
+			 new_ip_hdr->ip_ttl = INIT_TTL;
+
+			 new_ip_hdr->ip_sum = 0;
+
+
+			 new_ip_hdr->ip_sum = cksum(new_ip_hdr, 4 * new_ip_hdr->iphl);
+
+
+			 sr_ethernet_hdr_t *new_eth_hdr = (sr_ethernet_hdr_t *)(buffer);
+
+			  memcpy(new_eth_hdr->ether_dhost, new_eth_hdr->ether_shost, ETHER_ADDR_LEN);
+			 memcpy(new_eth_hdr->ether_shost, interface->addr, ETHER_ADDR_LEN);
+			new_eth_hdr->ether_type = htons(ethertype_ip);
+
+			sr_send_packet(sr, packet, len, interface->name); 
+						/*send ICMP message*/
 				return;
 				/*YO SEND AN ICMP REQUEST TO THE PREVIOUS HOP ABOUT TIMEOUT*/
 			}	
@@ -434,6 +471,7 @@ if(len < minlen){
 			}
 			if(packDest == NULL){
 			/*SEND ICMP MESSAGE TO FIND HOST*/
+				printf("NULL Interface Error\n");
 				return;
 			}	
 	
