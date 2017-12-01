@@ -205,7 +205,7 @@ void sr_handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req,
          new_ip_hdr->ip_sum = 0;
          new_ip_hdr->ip_src = out_iface->ip;
          new_ip_hdr->ip_dst= new_ip_hdr->ip_src;
-         new_ip_hdr->ip_sum = cksum(new_ip_hdr, 4 * new_ip_hdr->iphl);
+         new_ip_hdr->ip_sum = cksum(new_ip_hdr, 4 * new_ip_hdr->ip_hl);
          /*eth hdr*/
          memcpy(new_eth_hdr->ether_dhost, new_eth_hdr->ether_shost, ETHER_ADDR_LEN);
          memcpy(new_eth_hdr->ether_shost, out_iface->addr, ETHER_ADDR_LEN);
