@@ -186,7 +186,7 @@ void sr_handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req,
  
     while (walker){
         uint8_t * dfield = malloc(ICMP_DATA_SIZE);
-        //icmp hdr
+        /*icmp hdr*/
          new_icmp_hdr->icmp_type = 3;
          new_icmp_hdr->icmp_code = 1;
          new_ip_hdr->ip_sum = 0;
@@ -195,7 +195,7 @@ void sr_handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req,
          memcpy(new_icmp_hdr->data, dfield, ICMP_DATA_SIZE);
          free(dfield);
          new_icmp_hdr->icmp_sum = cksum(new_icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
-         //ip hdr
+         /*ip hdr*/
          new_ip_hdr->tos = 0;
          new_ip_hdr->ip_hl = sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
          new_ip_hdr->ip_id = 0;
@@ -206,7 +206,7 @@ void sr_handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req,
          new_ip_hdr->ip_src = out_iface->ip;
          new_ip_hdr->ip_dst= new_ip_hdr->ip_src;
          new_ip_hdr->ip_sum = cksum(new_ip_hdr, 4 * new_ip_hdr->iphl);
-         //eth hdr
+         /*eth hdr*/
          memcpy(new_eth_hdr->ether_dhost, new_eth_hdr->ether_shost, ETHER_ADDR_LEN);
          memcpy(new_eth_hdr->ether_shost, out_iface->addr, ETHER_ADDR_LEN);
         new_eth_hdr->ether_type = htons(ethertype_ip);
