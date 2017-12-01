@@ -488,6 +488,7 @@ if(len < minlen){
 	
 	}
 }else if (ethtype == ethertype_arp){
+	int minlen = sizeof(sr_ethernet_hdr_t);
 	minlen += sizeof(sr_arp_hdr_t);
 	 if (len < minlen)
 		 fprintf(stderr, "Failed to print ARP header, insufficent length\n");
