@@ -190,13 +190,13 @@ void sr_handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req,
          new_icmp_hdr->icmp_type = 3;
          new_icmp_hdr->icmp_code = 1;
          new_ip_hdr->ip_sum = 0;
-         new_ip_hdr->unused = 0;
+         new_icmp_hdr->unused = 0;
          memcpy(dfield, new_ip_hdr, ICMP_DATA_SIZE);
          memcpy(new_icmp_hdr->data, dfield, ICMP_DATA_SIZE);
          free(dfield);
          new_icmp_hdr->icmp_sum = cksum(new_icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
          /*ip hdr*/
-         new_ip_hdr->tos = 0;
+         new_ip_hdr->ip_tos = 0;
          new_ip_hdr->ip_hl = sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
          new_ip_hdr->ip_id = 0;
          new_ip_hdr->ip_off = 0;
