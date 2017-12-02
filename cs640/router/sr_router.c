@@ -297,7 +297,7 @@ void sr_handlepacket_arp(struct sr_instance *sr, uint8_t *pkt,
 	/* Loop waiting*/
 	while (waiting_walker != NULL)
 	{
-		sr_ethernet_hdr_t* eth_hdr = (sr_ethernet_hdr_t*)(waiting_walker->buf); //sets
+		sr_ethernet_hdr_t* eth_hdr = (sr_ethernet_hdr_t*)(waiting_walker->buf); 
 		memcpy(eth_hdr->ether_shost, arphdr->ar_sha, sizeof(unsigned char) * ETHER_ADDR_LEN);
 		memcpy(eth_hdr->ether_dhost, arphdr->ar_sha, sizeof(unsigned char) * ETHER_ADDR_LEN);
 		print_hdrs(waiting_walker->buf, sizeof(sr_ip_hdr_t) + sizeof(sr_ethernet_hdr_t) +sizeof(sr_icmp_t3_hdr_t));
@@ -483,6 +483,7 @@ if(len < minlen){
 			}
 			memcpy(e_hdr->ether_dhost,arp->mac,sizeof(uint8_t)*ETHER_ADDR_LEN);
 			memcpy(e_hdr->ether_shost,out->addr,sizeof(uint8_t)*ETHER_ADDR_LEN);
+			print_hdr_ip(packet+sizeof(sr_ethernet_hdr_t));
 			sr_send_packet(sr,packet,len,out->name);
 		}
 	
