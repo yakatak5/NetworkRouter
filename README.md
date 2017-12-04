@@ -1,6 +1,6 @@
 # Network Router
 
-Our implementation of a network router using Python
+Our implementation of a network router in C
 
 Authors:
 Alex Avrill 
